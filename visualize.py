@@ -1,9 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import sqlite3
+from app import get_connection
 
 # Connect to DB
-conn = sqlite3.connect('covid.db')
+conn = get_connection()
 
 # Load data for a country (let's do USA first)
 country = 'USA'

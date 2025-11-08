@@ -2,21 +2,74 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import plotly.express as px
+import os
+
+# Check if DB exists, if not build it
+db_path = 'covid.db'
+if not os.path.exists(db_path):
+    st.info("First time setup: Building database from source. This takes 30-60 seconds...")
+    # We'll paste the code from extract, transform, load here
+    import requests
+    import json
+
+    # Extract
+    url = "https://disease.sh/v3/covid-19/historical?lastdays=all"
+    response = requests.get(url)
+    data = response.json()
+    rows = []
+    for country_data in data:
+        country = country_data['country']
+        timeline = country_data['timeline']
+        cases = timeline['cases']
+        deaths = timeline['deaths']
+        recovered = timeline.get('recovered', {})
+        for date, case_count in cases.items():
+            row = {
+                'country': country,
+                'date': date,
+                'cases': case_count,
+                'deaths': deaths.get(date, 0),
+                'recovered': recovered.get(date, 0)
+            }
+            rows.append(row)
+    df = pd.DataFrame(rows)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values(['country', 'date'])
+    df.to_csv('covid_raw.csv', index=False)
+
+    # Transform
+    df['new_cases'] = df.groupby('country')['cases'].diff().fillna(0)
+    df['new_deaths'] = df.groupby('country')['deaths'].diff().fillna(0)
+    df['new_recovered'] = df.groupby('country')['recovered'].diff().fillna(0)
+    df['growth_rate_pct'] = df['new_cases'] / df.groupby('country')['cases'].shift(1)
+    df['growth_rate_pct'] = df['growth_rate_pct'].replace([float('inf'), -float('inf')], 0).fillna(0) * 100
+    df['new_cases_7day'] = df.groupby('country')['new_cases'].transform(lambda x: x.rolling(7, min_periods=1).mean())
+    df['new_deaths_7day'] = df.groupby('country')['new_deaths'].transform(lambda x: x.rolling(7, min_periods=1).mean())
+    df['growth_rate_pct'] = df['growth_rate_pct'].round(2)
+    df['new_cases_7day'] = df['new_cases_7day'].round(0)
+    df['new_deaths_7day'] = df['new_deaths_7day'].round(0)
+    df = df.fillna(0)
+    df.to_csv('covid_clean.csv', index=False)
+
+    # Load
+    conn_build = sqlite3.connect(db_path)
+    df.to_sql('covid_data', conn_build, if_exists='replace', index=False)
+    conn_build.close()
+    st.success("Database built! Ready to go.")
 
 st.title("COVID-19 Global Dashboard")
-st.markdown("Historical data up to March 2023 | ETL pipeline with SQLite backend")
+st.markdown("Historical data up to March 2023 | ETL pipeline with SQLite")
 
-# Connect to DB
 @st.cache_resource
 def get_connection():
-    return sqlite3.connect('covid.db')
+    return sqlite3.connect(db_path)
 
-# Sidebar controls
-st.sidebar.header("Filters")
+conn = get_connection()
+
+# Rest is same as before
 countries = pd.read_sql("SELECT DISTINCT country FROM covid_data ORDER BY country", conn)['country'].tolist()
 selected_country = st.sidebar.selectbox("Select Country", countries, index=countries.index('USA') if 'USA' in countries else 0)
 
-# Date range picker (fixed version)
 dates = pd.read_sql("SELECT DISTINCT date FROM covid_data ORDER BY date", conn)
 all_dates = pd.to_datetime(dates['date'])
 min_date = all_dates.min().date()
@@ -29,7 +82,6 @@ start_date, end_date = st.sidebar.date_input(
     value=(min_date, max_date)
 )
 
-# Load data for selected country and date range
 query = f"""
 SELECT date, new_cases_7day, growth_rate_pct 
 FROM covid_data 
@@ -39,7 +91,6 @@ AND date BETWEEN '{start_date}' AND '{end_date}'
 df_country = pd.read_sql(query, conn)
 df_country['date'] = pd.to_datetime(df_country['date'])
 
-# Global data
 global_query = f"""
 SELECT date, SUM(cases) as total_cases 
 FROM covid_data 
@@ -49,7 +100,6 @@ GROUP BY date
 df_global = pd.read_sql(global_query, conn)
 df_global['date'] = pd.to_datetime(df_global['date'])
 
-# Top 10 latest
 top10 = pd.read_sql("""
 SELECT country, MAX(date) as latest_date, cases as total_cases
 FROM covid_data
@@ -60,7 +110,6 @@ LIMIT 10
 
 conn.close()
 
-# Layout
 col1, col2 = st.columns(2)
 
 with col1:

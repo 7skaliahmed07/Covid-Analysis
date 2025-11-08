@@ -1,14 +1,15 @@
 import pandas as pd
 import sqlite3
+from app import get_connection
 
 print("Loading clean data...")
-df = pd.read_csv('covid_clean.csv')
+df = pd.read_csv("covid_clean.csv")
 
 # Create (or connect to) the database
-conn = sqlite3.connect('covid.db')
+conn = get_connection()
 
 # Load the DataFrame into SQLite (creates table if not exists)
-df.to_sql('covid_data', conn, if_exists='replace', index=False)
+df.to_sql("covid_data", conn, if_exists="replace", index=False)
 
 conn.close()
 
@@ -17,7 +18,7 @@ print("Table name: covid_data")
 print("Total rows loaded:", len(df))
 
 # Quick test query: top 10 countries by latest total cases
-conn = sqlite3.connect('covid.db')
+conn = get_connection()
 query = """
 SELECT country, MAX(date) as latest_date, cases as total_cases
 FROM covid_data
