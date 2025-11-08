@@ -3,19 +3,23 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 import os
+import requests
+import json
 
-# Check if DB exists, if not build it
 db_path = 'covid.db'
-if not os.path.exists(db_path):
-    st.info("First time setup: Building database from source. This takes 30-60 seconds...")
-    # We'll paste the code from extract, transform, load here
-    import requests
-    import json
 
+# Function to build DB if missing
+def build_db():
+    st.info("First time setup: Fetching data and building database. This takes 30-60 seconds...")
+    
     # Extract
     url = "https://disease.sh/v3/covid-19/historical?lastdays=all"
     response = requests.get(url)
+    if response.status_code != 200:
+        st.error("Could not fetch data from API")
+        return False
     data = response.json()
+    
     rows = []
     for country_data in data:
         country = country_data['country']
@@ -32,11 +36,11 @@ if not os.path.exists(db_path):
                 'recovered': recovered.get(date, 0)
             }
             rows.append(row)
+    
     df = pd.DataFrame(rows)
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values(['country', 'date'])
-    df.to_csv('covid_raw.csv', index=False)
-
+    
     # Transform
     df['new_cases'] = df.groupby('country')['cases'].diff().fillna(0)
     df['new_deaths'] = df.groupby('country')['deaths'].diff().fillna(0)
@@ -49,24 +53,31 @@ if not os.path.exists(db_path):
     df['new_cases_7day'] = df['new_cases_7day'].round(0)
     df['new_deaths_7day'] = df['new_deaths_7day'].round(0)
     df = df.fillna(0)
-    df.to_csv('covid_clean.csv', index=False)
-
-    # Load
+    
+    # Load into SQLite
     conn_build = sqlite3.connect(db_path)
     df.to_sql('covid_data', conn_build, if_exists='replace', index=False)
     conn_build.close()
-    st.success("Database built! Ready to go.")
+    
+    st.success("Database built and ready!")
+    return True
+
+# Build if needed
+if not os.path.exists(db_path):
+    build_db()
+
+# Cached connection
+@st.cache_resource
+def get_connection():
+    return sqlite3.connect(db_path, check_same_thread=False)
+
+conn = get_connection()
 
 st.title("COVID-19 Global Dashboard")
 st.markdown("Historical data up to March 2023 | ETL pipeline with SQLite")
 
-@st.cache_resource
-def get_connection():
-    return sqlite3.connect(db_path)
-
-conn = get_connection()
-
-# Rest is same as before
+# Sidebar
+st.sidebar.header("Filters")
 countries = pd.read_sql("SELECT DISTINCT country FROM covid_data ORDER BY country", conn)['country'].tolist()
 selected_country = st.sidebar.selectbox("Select Country", countries, index=countries.index('USA') if 'USA' in countries else 0)
 
@@ -82,6 +93,7 @@ start_date, end_date = st.sidebar.date_input(
     value=(min_date, max_date)
 )
 
+# Queries with fresh conn reads
 query = f"""
 SELECT date, new_cases_7day, growth_rate_pct 
 FROM covid_data 
@@ -108,8 +120,7 @@ ORDER BY total_cases DESC
 LIMIT 10
 """, conn)
 
-conn.close()
-
+# Charts
 col1, col2 = st.columns(2)
 
 with col1:
