@@ -7,7 +7,9 @@ st.title("COVID-19 Global Dashboard")
 st.markdown("Historical data up to March 2023 | ETL pipeline with SQLite backend")
 
 # Connect to DB
-conn = sqlite3.connect('covid.db')
+@st.cache_resource
+def get_connection():
+    return sqlite3.connect('covid.db')
 
 # Sidebar controls
 st.sidebar.header("Filters")
