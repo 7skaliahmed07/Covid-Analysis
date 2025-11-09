@@ -20,3 +20,11 @@ Built for learning purposes on macOS with free tools only.
 Data source: Reliable public COVID APIs (updated in code).
 
 Feel free to fork and improve!
+
+
+## Live Dashboard
+
+Check out the interactive dashboard here: 
+[Live App] [text](https://covid-analysis-uzair.streamlit.app/)
+
+It pulls fresh data on first load, then runs instantly. Pick any country, zoom the charts, slide the dates – all the ETL happens behind the scenes.
