@@ -1,4 +1,5 @@
 # COVID-19 Data Analysis ETL Pipeline
+![image_alt](https://github.com/7skaliahmed07/Covid-Analysis/blob/3c07061f075c26ff467aa04d1f397983e5bdb39c/overview.png)
 
 A simple ETL pipeline to pull COVID-19 data from public APIs, clean it, calculate trends, store in SQLite, and visualize with interactive dashboards.
 
