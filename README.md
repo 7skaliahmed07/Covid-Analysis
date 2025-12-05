@@ -5,45 +5,45 @@ This project automates the full flow of collecting, cleaning, storing and explor
 
 ## Repository Structure
 .
-├── README.md
-├── requirements.txt
-│
-├── data/
-│   ├── raw/
-│   │   └── covid_raw.csv
-│   ├── clean/
-│   │   └── covid_clean.csv
-│   └── covid.db
-│
-├── etl/
-│   ├── extract.py
-│   ├── transform.py
-│   ├── load.py
-│   ├── check_countries.py
-│   └── visualize.py
-│
-├── app/
-│   └── app.py
-│
-├── plots/
-│   ├── overview.png
-│   ├── global_cases.png
-│   ├── new_cases_usa.png
-│   └── growth_rate_usa.png
-│
-├── notebooks/
-│   ├── exploration.ipynb
-│   └── validation.ipynb
-│
-├── utils/
-│   ├── db.py
-│   ├── helpers.py
-│   └── logging_config.py
-│
-└── tests/
-    ├── test_extract.py
-    ├── test_transform.py
-    └── test_load.py
+|-- README.md
+|-- requirements.txt
+|
+|-- data
+|   |-- raw
+|   |   `-- covid_raw.csv
+|   |-- clean
+|   |   `-- covid_clean.csv
+|   `-- covid.db
+|
+|-- etl
+|   |-- extract.py
+|   |-- transform.py
+|   |-- load.py
+|   |-- check_countries.py
+|   `-- visualize.py
+|
+|-- app
+|   `-- app.py
+|
+|-- plots
+|   |-- overview.png
+|   |-- global_cases.png
+|   |-- new_cases_usa.png
+|   `-- growth_rate_usa.png
+|
+|-- notebooks
+|   |-- exploration.ipynb
+|   `-- validation.ipynb
+|
+|-- utils
+|   |-- db.py
+|   |-- helpers.py
+|   `-- logging_config.py
+|
+`-- tests
+    |-- test_extract.py
+    |-- test_transform.py
+    `-- test_load.py
 
 
 
