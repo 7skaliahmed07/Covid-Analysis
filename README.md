@@ -4,7 +4,7 @@
 This project automates the full flow of collecting, cleaning, storing and exploring COVID-19 case data. It retrieves updated data from public APIs, prepares it with pandas, loads it into SQLite and presents trends through static plots and an interactive Streamlit dashboard. The layout is structured so you can maintain or extend the pipeline easily.
 
 ## Repository Structure
-.
+```
 |-- README.md
 |-- requirements.txt
 |
@@ -44,7 +44,7 @@ This project automates the full flow of collecting, cleaning, storing and explor
     |-- test_extract.py
     |-- test_transform.py
     `-- test_load.py
-
+```
 
 
 ## Features
